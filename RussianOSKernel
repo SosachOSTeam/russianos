@@ -1,0 +1,1066 @@
+#make_bin#
+
+#LOAD_SEGMENT=0800h#
+#LOAD_OFFSET=0000h#
+
+#al=0b#
+#ah=00#
+#bh=00#
+#bl=00#
+#ch=00#
+#cl=02#
+#dh=00#
+#dl=00#
+#ds=0800#
+#es=0800#
+#si=7c02#
+#di=0000#
+#bp=0000#
+#cs=0800#
+#ip=0000#
+#ss=07c3#
+#sp=03fe#
+
+putc macro char
+    mov ah,0Eh
+    mov al,char
+    int 10h    
+endm  
+putc_at_coors macro char,x,y
+    mov ah,02h
+    mov dh,y
+    mov dl,x
+    mov bh,0
+    int 10h
+    mov ah,0Ah 
+    mov bh,00h
+    mov bl,text_color
+    mov cx,01h
+    mov al,char
+    int 10h
+endm  
+newstring macro
+putc 13
+putc 10    
+endm
+
+
+org 0000h     
+jmp start1       
+
+
+
+command_buffer db 20 dup(0)           
+file_buffer dw 513 dup(0) 
+read_file_buffer dw 513 dup(0)
+k db 0 
+help_c db '/help',0  
+cls_c db '/cls',0                   
+safemode_v db 1
+reboot_c db '/reboot',0 
+starts_c db '/starts',0 
+allc_c db '/allcommands',0                
+allc_m db '/help - view help',13,10
+db '/about - view infromation about RussianOS',13,10
+db '/memr - read from memory',13,10
+db '/memw - write to memory',13,10
+db '/mainsystem - find out whether it is possible to',13,10
+db 'put the system as a main',13,10                        
+db '/version - view system version',13,10    
+db '/date - get system date',13,10
+db '/time - get system time',13,10
+db '/cls - clear screen',13,10
+db '/allcommands - view list of commands',13,10
+db '/shutdown - shut down the system',13,10,0
+time_c db '/time',0
+memread_c db '/memr',0
+memwrite_c db '/memw',0       
+safemode_m db 'Safemode has activated.',13,10,0                                                                                                 
+date_c db '/date',0            
+shutdown_c db '/shutdown',0
+c db 0
+s db 0
+h db 0  
+d db 0                                
+first_message db 'Enter cylinder number:',13,10,0  
+safemode_error db 'ERROR:SAFEMODE.',13,10,0   
+command_not_found_error_m db 'ERROR:COMMAND NOT FOUND.',13,10,0
+second_message db 'Enter sector number:',13,10,0        
+third_message db 'Enter head number:',13,10,0     
+fourth_message db 'Enter drive number(0-A,1-B,...):',13,10,0
+safemode_c db '/safemode',0 
+osfm_c db '/offsafemode',0    ;13  
+osfm_m db 'Safemode has deactivated.',13,10,0
+version_m db 'System version: Pre-Alpha 0.1',13,10,0   
+d1 db 16
+version_c db '/version',0
+about_m db 'System released at 21th March.',13,10
+db 'Made by Nicolay Petrov.',13,10,0     
+about_c db '/about',0            
+mainsys_c db '/mainsystem',0
+string db 'RussianOS',13,10,0   
+help_m db 'Welcome to the center of addressing Russian OS.',13,10
+db 'At this point in the base of few',13,10
+db 'answers to your questions but in the future there will be more.',13,10
+db 'To find out whether it is possible to put the system as a main write command /mainsystem.',13,10,0
+mainsys_m db 'At the moment, it is not recommended to put Russian OS as the main system.',13,10,0    
+a db '   0     0 0   00000 0     0       '
+b db ' 000    0      000    000          '
+v db ' 000    000    0000   0000         ' 
+g db ' 0000   0      0      0            '
+d3 db ' 000   0   0  00000 0     0        '
+e db '0000   0000   0      0000          '
+j db '0 0 0    0      0    0 0 0         '
+z db '0000      0    000   0000          '
+i2 db '0   0  0  00  0 0 0  0   0         '
+yi db '0 0 0  0  00  0 0 0  0   0         '
+k2 db '0  0   0 0    0 0    0  0          '
+l db '   0     0 0   0   0 0     0       '
+m db '0     000   000 0 0 00  0  0       '
+n db '0  0   0000   0  0   0  0          '
+o db '  00   0    0 0    0   00          '
+p db '00000  0   0  0   0  0   0         '      
+r db '000    000    0      0             ' 
+s2 db '0000   0      0      0000          '
+t db '00000    0      0      0           '                  
+u db '0  0    00     0     0             '
+f db '00000  00000    0      0           '
+h2 db '0   0    0    0   0                '
+c2 db '0  0   0  0   00000      0         '
+ch1 db '0 0    000      0      0           '
+sh db '0  0  00  0  00  0  00000000       '   
+                            ;dl - x
+csh db '0  0  00  0  00000000      0       '
+tv db '00      0      000    000          '
+ii db '0     00     0000   0000   0       '  
+mg db '0      0      000    000           '
+ye db '0000      0   0000      0   0000   ';35
+ju db '0  00000  0  00000  00  0000       '
+ya db '000    000     00    0 0           '
+space db '                                   '
+jo1 db '00     0000   0000   000000        '  
+notepad_t db 'bloknos',129,0       
+sysvr db 'cfqri',128,'rirsfm',124,0  
+sysv db 'Pre-Alpha v0.2',0
+menu_t1 db '1 - memw',0
+menu_t2 db '2 - memr',0
+menu_t3 db '3 - redraw',0
+menu_t4 db '4 - notepad',0
+menu_t5 db 'm - menu',0       
+s_t1 db 'wcfs',129,'uona',0
+s_t2 db 'wcfs',129,'yqiusa',0
+rx dw 0
+ry dw 0      
+c_x dw 1
+c_y dw 1
+new_x dw 0
+new_y dw 0
+color db 0
+x dw 0
+y dw 0 
+j3 db 0
+i3 db 0          
+i db 0
+j1 db 0
+old_x dw 0
+old_y dw 0
+kvar db 0
+background_color db 0
+str db 'Russian OS',0 
+start_m db 'rsaqs',0  
+memw_t db 'MEMW v0.1',0   
+memr_t db 'MEMR v0.1',0
+c_m db 'C:',0
+s_m db 'S:',0
+h_m db 'H:',0         
+mr db 'MR',0
+mw db 'MW',0
+nt db 'N',0
+st db 'S',0
+notepad_buffer db 30 dup(0)
+d_m db 'D:',0   
+buffer db 10 dup(0)
+text_color db 15   
+u_m1 db 0
+u_m2 db 0              
+start1:         
+push cs
+pop ds    
+start:   
+putc '>'          
+lea di,command_buffer
+call read_string     
+lea di,command_buffer
+lea si,cls_c
+mov cx,5
+repe cmpsb
+je cls            
+lea di,command_buffer
+lea si,starts_c
+mov cx,8
+repe cmpsb
+je starts2
+lea di,command_buffer
+lea si,help_c
+mov cx,6
+repe cmpsb
+je help          
+
+lea di,command_buffer
+lea si,mainsys_c
+mov cx,12
+repe cmpsb
+je mainsys
+
+lea di,command_buffer
+lea si,safemode_c
+mov cx,10
+repe cmpsb
+je safemode
+
+lea di,command_buffer
+lea si,reboot_c
+mov cx,8
+repe cmpsb
+je reboot
+
+lea di,command_buffer
+lea si,version_c
+mov cx,8
+repe cmpsb
+je version
+
+lea di,command_buffer
+lea si,about_c
+mov cx,7
+repe cmpsb
+je about
+
+lea di,command_buffer
+lea si,memread_c
+mov cx,6
+repe cmpsb
+je memread
+
+lea di,command_buffer
+lea si,memwrite_c
+mov cx,6
+repe cmpsb
+je memwrite
+
+lea di,command_buffer
+lea si,osfm_c
+mov cx,13
+repe cmpsb
+je safemode_off
+
+lea di,command_buffer
+lea si,time_c
+mov cx,6
+repe cmpsb
+je time
+
+lea di,command_buffer
+lea si,date_c
+mov cx,6
+repe cmpsb
+je date
+
+lea di,command_buffer
+lea si,allc_c
+mov cx,13
+repe cmpsb
+je allc
+
+lea di,command_buffer
+lea si,shutdown_c
+mov cx,10
+repe cmpsb
+je reboot
+
+jmp command_not_found_error
+jmp start 
+time:
+    mov ah,02h
+    int 1Ah
+    call print_hex  
+    mov ch,cl       
+    putc ':' 
+    call print_hex 
+    mov ch,dh
+    putc ':'
+    call print_hex
+    putc 13
+    putc 10
+jmp start       
+date:
+    mov ah,04h
+    int 1Ah
+    mov ch,dl
+    call print_hex
+    putc '.'
+    mov ah,04h
+    int 1Ah
+    mov ch,dh
+    call print_hex
+    putc '.'
+    mov ah,04h
+    int 1Ah
+    call print_hex  
+    mov ah,04h
+    int 1Ah
+    mov ch,cl
+    call print_hex 
+    putc 13
+    putc 10
+jmp start 
+allc:
+    lea si,allc_m
+    call print_string
+jmp start
+print_hex proc
+    xor ax,ax
+    mov al,ch 
+    mov bl,16
+    div bl   
+    push ax
+    add al,'0'
+    putc al
+    pop ax
+    add ah,'0'  
+    mov bh,ah
+    putc bh   
+    ret 
+endp
+    
+help:
+lea si,help_m
+call print_string
+jmp start   
+mainsys:
+lea si,mainsys_m
+call print_string
+jmp start  
+cls:
+mov ah,00h
+mov al,03h
+int 10h 
+jmp start  
+reboot:
+int 19h  
+version:
+lea si,version_m
+call print_string
+jmp start
+about:
+lea si,about_m
+call print_string
+jmp start 
+safemode: 
+lea si,safemode_m
+call print_string
+mov safemode_v,0
+jmp start 
+safemode_off: 
+lea si,osfm_m
+call print_string
+mov safemode_v,1
+jmp start  
+starts2:
+mov ah,00h
+mov al,13h
+int 10h       
+mov cx,0
+mov dx,1   
+call repaint 
+jmp starts
+memread:
+    cmp safemode_v,0
+    je safemode_err 
+    lea si,first_message
+    call print_string
+    mov ah,00h
+    int 16h 
+    putc al
+    newstring
+    sub al,'0'
+    mov c,al
+    lea si,second_message
+    call print_string  
+    mov ah,00h
+    int 16h   
+    putc al
+    newstring
+    sub al,'0'
+    mov s,al  
+    lea si,third_message
+    call print_string
+    mov ah,00h
+    int 16h        
+    putc al
+    newstring
+    sub al,'0'
+    mov h,al 
+    lea si,fourth_message
+    call print_string     
+    mov ah,00h
+    int 16h           
+    putc al
+    newstring
+    sub al,'0'
+    mov d,al 
+    mov bx,offset read_file_buffer 
+    call memr   
+    lea si,read_file_buffer 
+    call print_string     
+    putc 13
+    putc 10
+jmp start    
+safemode_err:
+lea si,safemode_error
+call print_string
+jmp start
+memwrite:
+    cmp safemode_v,0
+    je safemode_err    
+    lea di,file_buffer
+    call read_string
+    lea si,first_message
+    call print_string
+    mov ah,00h
+    int 16h     
+    putc al
+    newstring
+    sub al,'0'
+    mov c,al
+    lea si,second_message
+    call print_string  
+    mov ah,00h
+    int 16h      
+    putc al
+    newstring
+    sub al,'0'
+    mov s,al  
+    lea si,third_message
+    call print_string
+    mov ah,00h
+    int 16h       
+    putc al
+    newstring
+    sub al,'0'
+    mov h,al 
+    lea si,fourth_message
+    call print_string     
+    mov ah,00h
+    int 16h        
+    putc al
+    newstring
+    sub al,'0'
+    mov d,al     
+    mov bx,offset file_buffer  
+    call memw      
+jmp start  
+mov c_x,0
+mov c_y,0   
+mov cx,0
+mov dx,0    
+mov u_m1,00h 
+mov u_m2,00h                                  
+call putmouse
+starts:      
+mov ah,00h
+int 16h  
+cmp al,'s'
+je down
+cmp al,'w'
+je up
+cmp al,'a'
+je left
+cmp al,'d'
+je right
+cmp al,'1'
+je k1        
+cmp al,'2'
+je memr1
+cmp al,'3'
+je k3
+cmp al,'4'
+je notepad          
+cmp al,'m'
+je menu     
+cmp al,'c'
+je settings
+cmp al,' '
+je spc
+jmp starts
+ret    
+
+spc:
+    cmp c_x,30
+    jl jn_e1
+    cmp c_x,50
+    jg jn_e1
+    cmp c_y,30
+    jl jn_e1
+    cmp c_y,60
+    jg jn_e1
+    jmp k1
+    
+    jn_e1:
+    cmp c_x,70
+    jl jn_e2
+    cmp c_x,90
+    jg jn_e2
+    cmp c_y,30
+    jl jn_e2
+    cmp c_y,60
+    jg jn_e2
+    jmp memr1
+    jn_e2:  
+    cmp c_x,110
+    jl jn_e3
+    cmp c_x,130
+    jg jn_e3
+    cmp c_y,30
+    jl jn_e3
+    cmp c_y,60
+    jg jn_e3
+    jmp notepad
+    jn_e3:     
+    cmp c_x,150
+    jl jn_e4
+    cmp c_x,170
+    jg jn_e4
+    cmp c_y,30
+    jl jn_e4
+    cmp c_y,60
+    jg jn_e4
+    jmp settings         
+    jn_e4:                
+    jmp starts
+
+down:     
+    push cx
+    push dx
+    mov cx,c_x
+    mov dx,c_y
+    mov old_x,cx
+    mov old_y,dx
+    add c_y,2
+    call putmouse
+    pop dx
+    pop cx
+jmp starts  
+up:     
+    push cx
+    push dx
+    mov cx,c_x
+    mov dx,c_y
+    mov old_x,cx
+    mov old_y,dx
+    sub c_y,2
+    call putmouse
+    pop dx
+    pop cx
+jmp starts  
+right:     
+    push cx
+    push dx
+    mov cx,c_x
+    mov dx,c_y
+    mov old_x,cx
+    mov old_y,dx
+    add c_x,2
+    call putmouse
+    pop dx
+    pop cx
+jmp starts  
+left:     
+    push cx
+    push dx
+    mov cx,c_x
+    mov dx,c_y
+    mov old_x,cx
+    mov old_y,dx
+    sub c_x,2
+    call putmouse
+    pop dx
+    pop cx
+jmp starts   
+menu:
+    mov rx,0
+    mov ry,100
+    mov new_x,100
+    mov new_y,200
+    mov color,04h
+    call fill_rect
+    mov dl,0
+    mov dh,15
+    lea si,menu_t1
+    call putstr_at_coors
+    mov dl,0
+    mov dh,16
+    lea si,menu_t2
+    call putstr_at_coors
+    mov dl,0
+    mov dh,17
+    lea si,menu_t3
+    call putstr_at_coors
+    mov dl,0
+    mov dh,18
+    lea si,menu_t4
+    call putstr_at_coors
+    mov dl,0
+    mov dh,19
+    lea si,menu_t5
+    call putstr_at_coors
+jmp starts
+k1:
+   call draw_window
+   jmp memwg   
+memr1:    
+   call draw_window
+   jmp memreadg
+k3:
+    call repaint
+    jmp starts 
+repaint proc        
+    mov rx,0
+    mov ry,0  
+    mov new_x,320
+    mov new_y,200    
+    mov bh,background_color
+    mov color,bh
+    call fill_rect  
+    mov rx,0
+    mov ry,180
+    mov new_x,50
+    mov new_y,200
+    mov color,02h
+    call fill_rect      
+    lea di,start_m 
+    mov cx,0
+    mov dx,190
+    call draw_russian_string                  
+    lea si,str
+    mov dl,0
+    mov dh,0
+    call putstr_at_coors 
+    mov rx,30
+    mov ry,30
+    mov new_x,50
+    mov new_y,60
+    mov color,02h
+    call fill_rect  
+    mov rx,70
+    mov ry,30
+    mov new_x,90
+    mov new_y,60
+    mov color,0Eh
+    call fill_rect       
+    mov rx,110
+    mov ry,30
+    mov new_x,130
+    mov new_y,60
+    mov color,0Fh
+    call fill_rect 
+    mov rx,150
+    mov ry,30
+    mov new_x,170
+    mov new_y,60
+    mov color,01h
+    call fill_rect
+    lea si,mw
+    mov dl,4
+    mov dh,8
+    call putstr_at_coors 
+    lea si,mr
+    mov dl,9
+    mov dh,8
+    call putstr_at_coors
+    lea si,nt
+    mov dl,14
+    mov dh,8
+    call putstr_at_coors
+    lea si,st
+    mov dl,20
+    mov dh,8
+    call putstr_at_coors   
+    ret     
+endp
+create_edit proc  
+    mov kvar,0
+    read:
+        mov ah,00h
+        int 16h
+        cmp al,13
+        je ret11  
+        cmp al,8
+        jne no_b                     
+        cmp k,0
+        je read
+        dec dl
+        dec kvar   
+        putc_at_coors ' ',dl,dh
+        dec di
+        mov [di],0
+        jmp read  
+        no_b:     
+            cmp kvar,20
+            jge read
+            mov [di],al
+            putc_at_coors al,dl,dh
+            inc di 
+            inc dl
+            inc kvar
+        jmp read
+    ret11:
+        mov [di],0
+        ret    
+endp
+draw_window proc
+    mov rx,30
+    mov ry,30    
+    mov color,04
+    mov new_x,290
+    mov new_y,170
+    call fill_rect 
+    ret   
+endp          
+settings:
+    call draw_window        
+    mov cx,30
+    mov dx,155
+    lea di,sysvr
+    call draw_russian_string
+    mov dh,19
+    mov dl,20
+    lea si,sysv
+    call putstr_at_coors
+    mov cx,30
+    mov dx,35
+    lea di,s_t1
+    call draw_russian_string
+    mov ah,00h
+    int 16h   
+    putc_at_coors al,17,4
+    sub al,'0'
+    mov background_color,al 
+    mov cx,30
+    mov dx,50
+    lea di,s_t2
+    call draw_russian_string
+    mov ah,00h
+    int 16h
+    putc_at_coors al,17,6
+    sub al,'0'  
+    mov text_color,al
+    jmp starts
+memwg:    
+    lea di,file_buffer
+    mov dl,5
+    mov dh,6
+    mov bh,20
+    call create_edit
+    lea si,memw_t      
+    mov dl,20
+    mov dh,6
+    call putstr_at_coors    
+    lea si,c_m      
+    mov dl,10
+    mov dh,7
+    call putstr_at_coors
+    lea si,s_m      
+    mov dl,10
+    mov dh,8
+    call putstr_at_coors   
+    lea si,h_m      
+    mov dl,10
+    mov dh,9
+    call putstr_at_coors 
+    lea si,d_m      
+    mov dl,10
+    mov dh,10
+    call putstr_at_coors     
+    mov ah,00h
+    int 16h 
+    putc_at_coors al,12,7 
+    sub al,'0'
+    mov c,al
+    mov ah,00h
+    int 16h              
+    putc_at_coors al,12,8
+    sub al,'0'
+    mov s,al
+    mov ah,00h
+    int 16h              
+    putc_at_coors al,12,9
+    sub al,'0'
+    mov h,al
+    mov ah,00h
+    int 16h              
+    putc_at_coors al,12,10
+    sub al,'0'
+    mov d,al               
+    mov bx,offset file_buffer  
+    call memw      
+jmp starts   
+memreadg:     
+    lea si,memr_t      
+    mov dl,20
+    mov dh,6
+    call putstr_at_coors    
+    lea si,c_m      
+    mov dl,10
+    mov dh,7
+    call putstr_at_coors
+    lea si,s_m      
+    mov dl,10
+    mov dh,8
+    call putstr_at_coors   
+    lea si,h_m      
+    mov dl,10
+    mov dh,9
+    call putstr_at_coors 
+    lea si,d_m      
+    mov dl,10
+    mov dh,10
+    call putstr_at_coors
+    mov ah,00h
+    int 16h 
+    putc_at_coors al,12,7  
+    sub al,'0'
+    mov c,al
+    mov ah,00h
+    int 16h              
+    putc_at_coors al,12,8
+    sub al,'0'
+    mov s,al
+    mov ah,00h
+    int 16h              
+    putc_at_coors al,12,9
+    sub al,'0'
+    mov h,al
+    mov ah,00h
+    int 16h              
+    putc_at_coors al,12,10
+    sub al,'0'
+    mov d,al
+    mov bx, offset read_file_buffer
+    call memr
+    mov si,read_file_buffer
+    mov dh,11
+    mov dl,10
+    call putstr_at_coors
+jmp starts
+fill_rect proc
+    mov cx,rx
+    mov dx,ry
+    mov i3,0
+    f1:
+    mov j3,0
+    f2:
+        mov ah,0Ch
+        mov al,color
+        int 10h 
+        inc cx
+        inc j3
+        cmp cx,new_x
+    jl f2     
+    mov cx,rx
+    inc i3 
+    inc dx
+    cmp dx,new_y
+    jl f1     
+    ret
+endp        
+draw_russian_string proc 
+    prr:    
+        lea si,a
+        mov al,[di]
+        cmp al,0
+        je rr1
+        mov bl,35
+        sub ax,'a'
+        mul bl
+        add si,ax
+        call draw_russian_char
+        inc di
+    jmp prr   
+    rr1:
+    ret
+endp
+
+draw_russian_char proc 
+    mov i,0
+    mov x,cx
+    mov y,dx
+    pr:      
+    mov j1,0
+    printed:
+        mov ah,0Ch  
+        mov bl,[si]
+        cmp bl,'0'
+        je ok 
+        inc cx
+        inc si
+        inc j1  
+        cmp j1,7
+        jl printed
+        ok: 
+        cmp j1,7
+        jge tst
+        mov al,text_color
+        inc j1
+        inc si
+        inc cx
+        int 10h 
+        cmp j1,7
+        jl printed
+    tst:   
+    mov cx,x
+    inc dx
+    inc i
+    cmp i,4
+    jl pr      
+    mov dx,y
+    add x,7
+    mov cx,x
+    ret             
+endp
+putmouse proc     
+    mov cx,old_x
+    mov dx,old_y
+    mov al,u_m1       
+    mov ah,0Ch
+    int 10h      
+    mov ah,0Ch
+    mov cx,old_x
+    mov dx,old_y
+    inc dx
+    mov al,u_m2
+    int 10h
+    mov cx,c_x  
+    mov dx,c_y
+    mov ah,0Dh
+    int 10h
+    mov u_m1,al
+    mov cx,c_x
+    mov dx,c_y
+    inc dx
+    mov ah,0Dh
+    int 10h
+    mov u_m2,al  
+       
+    mov cx,c_x
+    mov dx,c_y
+    mov al,05h
+    mov ah,0Ch
+    int 10h
+    mov cx,c_x
+    mov dx,c_y
+    inc dx
+    mov ah,0Ch
+    mov al,05h
+    int 10h    
+    
+    ret  
+endp
+
+putstr_at_coors proc
+    putstring:                  
+        mov al,[si]
+        cmp al,0
+        je puts_r
+        putc_at_coors al,dl,dh
+        inc dl
+        inc si
+    jmp putstring
+    puts_r:      
+    ret
+endp                                           
+
+notepad:            
+    call draw_window   
+    lea di,notepad_t
+    mov dx,40
+    mov cx,100
+    call draw_russian_string
+    lea di,notepad_buffer
+    mov dl,7
+    mov dh,10
+    call create_edit 
+    mov c,0
+    mov s,11
+    mov h,0
+    mov d,0
+    mov bx,offset notepad_buffer  
+    call memw
+    jmp starts      
+command_not_found_error:
+    lea si,command_not_found_error_m
+    call print_string
+jmp start   
+print_string proc
+    print:
+        mov al,[si] 
+        cmp al,0
+        jz ret1
+        putc al 
+        inc si
+    jmp print
+    ret1:
+    ret        
+endp                
+memr proc
+    mov ah,02h
+    mov al,1
+    mov ch,c
+    mov cl,s
+    mov dh,h
+    mov dl,0     
+    int 13h 
+    ret    
+endp
+memw proc
+    mov ah,03h
+    mov al,1
+    mov ch,c
+    mov cl,s
+    mov dh,h
+    mov dl,0     
+    int 13h   
+    ret  
+endp
+read_string proc   
+    mov k,0
+    read_char:
+        xor ah,ah
+        int 16h
+        cmp al,13
+        je ret2 
+        cmp k,19 
+        jge read_char
+        cmp al,8
+        jne no_b2
+        cmp k,0
+        je read_char
+        putc 8
+        putc ' '
+        putc 8
+        dec di
+        mov [di],0
+        dec k   
+        jmp read_char
+        no_b2: 
+        putc al
+        inc k
+        mov [di],al
+        inc di
+    jmp read_char            
+    ret2:      
+    putc 13
+    putc 10
+    mov [di],0
+    ret        
+endp     
